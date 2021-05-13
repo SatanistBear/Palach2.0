@@ -7,7 +7,7 @@ import re
 
 bot = commands.Bot(command_prefix='-')
 
-TOKEN = 'NzQ1OTk4NDM1Mjc0MTk1MDQ0.Xz57Lg.vgD6ISPXUSl7iD4sgMiqmW6vuaQ'
+TOKEN = DISCORD_TOKEN
 # ----------------------------------------------------------------------------------------------
 
 
