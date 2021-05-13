@@ -4,14 +4,11 @@ import asyncio
 import random
 import re
 import os
-from boto.s3.connection import S3Connection
-s3 = S3Connection(os.environ['DISCORD_TOKEN'])
-print(s3)
-
+import token
 
 bot = commands.Bot(command_prefix='-')
 
-TOKEN = s3
+TOKEN = token.discord_token()
 # ----------------------------------------------------------------------------------------------
 
 
