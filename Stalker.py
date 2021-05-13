@@ -3,6 +3,7 @@ from discord.ext import commands
 import asyncio
 import random
 import re
+import os
 from boto.s3.connection import S3Connection
 s3 = S3Connection(os.environ['DISCORD_TOKEN'])
 print(s3)
