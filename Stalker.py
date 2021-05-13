@@ -3,11 +3,14 @@ from discord.ext import commands
 import asyncio
 import random
 import re
+from boto.s3.connection import S3Connection
+s3 = S3Connection(os.environ['DISCORD_TOKEN'])
+print(s3)
 
 
 bot = commands.Bot(command_prefix='-')
 
-TOKEN = proccess.env.DISCORD_TOKEN
+TOKEN = 
 # ----------------------------------------------------------------------------------------------
 
 
