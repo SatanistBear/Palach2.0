@@ -1,2 +1,2 @@
 web: npm start
-worker: Stalker.py
+worker: python3 Stalker.py
