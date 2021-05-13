@@ -7,7 +7,7 @@ import re
 
 bot = commands.Bot(command_prefix='-')
 
-TOKEN = DISCORD_TOKEN
+TOKEN = proccess.env.DISCORD_TOKEN
 # ----------------------------------------------------------------------------------------------
 
 
