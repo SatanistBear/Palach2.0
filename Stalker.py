@@ -4,11 +4,11 @@ import asyncio
 import random
 import re
 import os
-import token
+import dis_token
 
 bot = commands.Bot(command_prefix='-')
 
-TOKEN = token.discord_token()
+TOKEN = dis_token.discord_token()
 # ----------------------------------------------------------------------------------------------
 
 
