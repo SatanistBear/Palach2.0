@@ -36,11 +36,14 @@ async def condom_ranking(ctx):
     all_condoms = gym_db.get_all_condoms()
     all_condoms.sort()
     print(all_condoms)
-    for name, count in all_condoms:
-        pass
-
-
-    # await ctx.send(f"```{name} сказал слово *гандон* {gym_db.get_condoms(ctx.message.author.id)} раз```")
+    ranking_board = '```\tТаблица лидеров по использованным гандонам:\n---------------\n'
+    for tuple in all_condoms:
+        member = await ctx.guild.fetch_member(tuple[0])
+        name = member.name
+        ranking_board += f'{name} - {tuple[1]} гандонов'
+    ranking_board += '```'
+        # ranking_board +=
+    await ctx.send(ranking_board)
 
 
 bot.run(TOKEN)
