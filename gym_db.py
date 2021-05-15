@@ -75,5 +75,13 @@ def get_condoms(member_id):
     return count
 
 
+def get_all_condoms():
+    cursor.execute(f"""
+        SELECT member_id,count FROM condom_count
+        """)
+    count = cursor.fetchall()
+    return count
+
+
 
 

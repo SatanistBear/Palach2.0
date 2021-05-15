@@ -33,9 +33,14 @@ async def on_message(message):
 
 @bot.command(pass_context=True)
 async def condom_ranking(ctx):
-    name = ctx.message.author.name
+    all_condoms = gym_db.get_all_condoms()
+    all_condoms.sort()
+    print(all_condoms)
+    for name, count in all_condoms:
+        pass
 
-    await ctx.send(f"```{name} сказал слово *гандон* {gym_db.get_condoms(ctx.message.author.id)} раз```")
+
+    # await ctx.send(f"```{name} сказал слово *гандон* {gym_db.get_condoms(ctx.message.author.id)} раз```")
 
 
 bot.run(TOKEN)
