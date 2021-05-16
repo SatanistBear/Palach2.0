@@ -37,7 +37,7 @@ async def on_message(message):
 @bot.command(pass_context=True)
 async def condom_ranking(ctx):
     all_condoms = gym_db.Condoms().get_all_condoms()
-    all_condoms.sort()
+    all_condoms.sort(key=lambda x: x[1], reverse=True)
     # print(all_condoms)
     ranking_board = '```\tТаблица лидеров по использованным гандонам:\n---------------\n'
     for tuple in all_condoms:

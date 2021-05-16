@@ -82,13 +82,20 @@ class Condoms:
         connection.commit()
         return True
 
+    def del_fact(self, member_id):
+        cursor.execute(f"""
+        DELETE FROM condom_count WHERE member_id = {member_id}
+        """)
+        connection.commit()
+        return True
+
     def add_condom(self, member_id):
         cursor.execute(f"""
         SELECT count FROM condom_count WHERE member_id={member_id}
         """)
-        c = cursor.fetchone()[0]
+        count = cursor.fetchone()[0]
         cursor.execute(f"""
-            UPDATE condom_count SET count = {c + 1} WHERE member_id = {member_id}
+            UPDATE condom_count SET count = {count + 1} WHERE member_id = {member_id}
             """)
         connection.commit()
         return True
