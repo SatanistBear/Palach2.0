@@ -29,7 +29,7 @@ async def on_message(message):
                 gym_db.Condoms().add_condom(message.author.id)
                 fact_id = random.randint(0, gym_db.Facts().facts_max_id())
 
-                await message.channel.send('```Интересный факт о презервативах:\n' + gym_db.Facts().r_fact(fact_id) + '```')
+                await message.channel.send('```Интересный факт о гандонах:\n' + gym_db.Facts().r_fact(fact_id) + '```')
 
         await bot.process_commands(message)
 
