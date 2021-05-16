@@ -1,2 +1,4 @@
 discord
 asyncio
+youtube_dl
+PyNaCl

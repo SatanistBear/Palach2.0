@@ -6,12 +6,60 @@ import dis_token
 import re
 import random
 import gym_db
+import youtube_dl
 
 bot = commands.Bot(command_prefix='-')
 
 TOKEN = dis_token.discord_token()
 
 gym_db.init()
+
+# ---------vMusic settingsv------------
+ytdl_format_options = {
+    'format': 'bestaudio/best',
+    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
+    'restrictfilenames': True,
+    'noplaylist': True,
+    'nocheckcertificate': True,
+    'ignoreerrors': False,
+    'logtostderr': False,
+    'quiet': True,
+    'no_warnings': True,
+    'default_search': 'auto',
+    'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
+}
+
+ffmpeg_options = {
+    'options': '-vn'
+}
+
+ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
+
+
+class YTDLSource(discord.PCMVolumeTransformer):
+    def __init__(self, source, *, data, volume=0.5):
+        super().__init__(source, volume)
+
+        self.data = data
+
+        self.title = data.get('title')
+        self.url = data.get('url')
+
+    @classmethod
+    async def from_url(cls, url, *, loop=None, stream=False):
+        loop = loop or asyncio.get_event_loop()
+        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
+
+        if 'entries' in data:
+            # take first item from a playlist
+            data = data['entries'][0]
+
+        filename = data['url'] if stream else ytdl.prepare_filename(data)
+        return cls(discord.FFmpegPCMAudio(filename, executable='ffmpeg/bin/ffmpeg.exe'), data=data)
+
+
+# ---------^Music settings^------------
+
 
 @bot.event
 async def on_ready():
@@ -34,7 +82,7 @@ async def on_message(message):
         await bot.process_commands(message)
 
 
-@bot.command(pass_context=True)
+@bot.command(pass_context=True, help='condom words ranking')
 async def condom_ranking(ctx):
     all_condoms = gym_db.Condoms().get_all_condoms()
     all_condoms.sort(key=lambda x: x[1], reverse=True)
@@ -53,16 +101,30 @@ async def condom_ranking(ctx):
     await ctx.send(ranking_board)
 
 
-# def add_fact(fact):
-#     facts = gym_db.Facts()
-#     facts.w_fact(fact)
-#
-#
-# def delete_fact():
-#     gym_db.Facts().del_fact(2)
-#
+# ---------------Music---------------
 
-# add_fact("""""")
-# delete_fact()
-# print(gym_db.Facts().facts_max_id())
+
+@bot.command(pass_context=True, help='Join voice channel')
+async def join_gym(ctx):
+    if not ctx.message.author.voice:
+        await ctx.message.channel.send("Ты ещё не в качалке, дружище")
+    else:
+        await ctx.message.author.voice.channel.connect()
+
+
+
+@bot.command(pass_context=True, help='Leave voice channel')
+async def leave_gym(ctx):
+    await ctx.message.guild.voice_client.disconnect()
+
+
+@bot.command(pass_context=True, help='Play gachi remix (-gachi url)')
+async def gachi(ctx, url):
+    voice_client = ctx.message.guild.voice_client
+    player = await YTDLSource.from_url(url, loop=bot.loop)
+    voice_client.play(player, after=lambda e: print(f'Player error: {e}' if e else None))
+
+
+
+
 bot.run(TOKEN)
