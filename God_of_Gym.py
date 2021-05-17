@@ -8,6 +8,8 @@ import random
 import gym_db
 import youtube_dl
 import subprocess
+import ctypes
+import ctypes.util
 
 bot = commands.Bot(command_prefix='-')
 
