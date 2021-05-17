@@ -3,4 +3,3 @@ asyncio
 youtube_dl
 PyNaCl
 colorlog
-libvpx.so.6
