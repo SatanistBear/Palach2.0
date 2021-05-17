@@ -30,9 +30,6 @@ ytdl_format_options = {
     'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
 }
 
-cmd = ['ffmpeg']
-out = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
 
 
@@ -55,7 +52,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
             data = data['entries'][0]
 
         filename = data['url'] if stream else ytdl.prepare_filename(data)
-        return cls(discord.FFmpegPCMAudio(filename, executable=out), data=data)
+        return cls(discord.FFmpegPCMAudio(filename), data=data)
 
 
 # ---------^Music settings^------------
