@@ -7,6 +7,7 @@ import re
 import random
 import gym_db
 import youtube_dl
+import subprocess
 
 bot = commands.Bot(command_prefix='-')
 
@@ -29,9 +30,8 @@ ytdl_format_options = {
     'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
 }
 
-ffmpeg_options = {
-    'options': '-vn'
-}
+cmd = ['ffmpeg']
+out = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
 
@@ -55,7 +55,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
             data = data['entries'][0]
 
         filename = data['url'] if stream else ytdl.prepare_filename(data)
-        return cls(discord.FFmpegPCMAudio(filename, executable='ffmpeg/bin/ffmpeg.exe'), data=data)
+        return cls(discord.FFmpegPCMAudio(filename), data=data)
 
 
 # ---------^Music settings^------------
