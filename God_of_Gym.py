@@ -1,12 +1,11 @@
 import discord
 from discord.ext import commands
 import asyncio
-import time
 import dis_token
 import re
 import random
-import gym_db
 import games
+import gym_db
 # from pynput.keyboard import Key, Controller
 # import pynput
 # import pyautogui
@@ -17,7 +16,6 @@ bot = commands.Bot(command_prefix='-')
 TOKEN = dis_token.discord_token()
 
 gym_db.init()
-
 
 @bot.event
 async def on_ready():
