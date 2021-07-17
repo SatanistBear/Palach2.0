@@ -6,7 +6,11 @@ import dis_token
 import re
 import random
 import gym_db
-import youtube_dl
+import games
+# from pynput.keyboard import Key, Controller
+# import pynput
+# import pyautogui
+# from win32gui import GetWindowText, GetForegroundWindow
 
 bot = commands.Bot(command_prefix='-')
 
@@ -14,56 +18,20 @@ TOKEN = dis_token.discord_token()
 
 gym_db.init()
 
-# ---------vMusic settingsv------------
-ytdl_format_options = {
-    'format': 'bestaudio/best',
-    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
-    'restrictfilenames': True,
-    'noplaylist': True,
-    'nocheckcertificate': True,
-    'ignoreerrors': False,
-    'logtostderr': False,
-    'quiet': True,
-    'no_warnings': True,
-    'default_search': 'auto',
-    'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
-}
-
-ffmpeg_options = {
-    'options': '-vn'
-}
-
-ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
-
-
-class YTDLSource(discord.PCMVolumeTransformer):
-    def __init__(self, source, *, data, volume=0.5):
-        super().__init__(source, volume)
-
-        self.data = data
-
-        self.title = data.get('title')
-        self.url = data.get('url')
-
-    @classmethod
-    async def from_url(cls, url, *, loop=None, stream=False):
-        loop = loop or asyncio.get_event_loop()
-        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
-
-        if 'entries' in data:
-            # take first item from a playlist
-            data = data['entries'][0]
-
-        filename = data['url'] if stream else ytdl.prepare_filename(data)
-        return cls(discord.FFmpegPCMAudio(filename, executable='ffmpeg/bin/ffmpeg.exe'), data=data)
-
-
-# ---------^Music settings^------------
-
 
 @bot.event
 async def on_ready():
     print("Бог качалки пробудился")
+    i = 0
+    while True:
+        economy = gym_db.Economy()
+        economy.update_currency()
+        print("Валюты обновлены")
+        if i >= 10:
+            economy.hour_bucks()
+            i = 0
+        await asyncio.sleep(60)
+        i += 1
 
 
 @bot.event
@@ -101,29 +69,282 @@ async def condom_ranking(ctx):
     await ctx.send(ranking_board)
 
 
-# ---------------Music---------------
+@bot.command(pass_context=True, help='Shows your bank account')
+async def bank(ctx):
+    money_inf = gym_db.Economy().get_money_info(ctx.message.author.id)
+    #gym_db.Economy().change_bucks(ctx.message.author.id, 270)
+    await ctx.send(f"```На счету -{ctx.message.author.name}-\nBucks-ов: {money_inf[0]}\nТугриков: {money_inf[1]}\n"
+                   f"Червонцев: {money_inf[2]}\nBondage-ей: {money_inf[3]}```")
 
 
-@bot.command(pass_context=True, help='Join voice channel')
-async def join_gym(ctx):
-    if not ctx.message.author.voice:
-        await ctx.message.channel.send("Ты ещё не в качалке, дружище")
+@bot.command(pass_context=True, help='-casino [money] //You know what it is')
+async def casino(ctx, money):
+    money = float(money)
+    result = games.casino(money)
+    economy = gym_db.Economy()
+    bank_money = economy.get_money_info(ctx.message.author.id)[0]
+    print(money, result, bank_money)
+    if bank_money - money > 0:
+        economy.change_bucks(ctx.message.author.id, result)
+        if result == money:
+            await ctx.send(f"```Ты победил. Держи свои ♂{money} BUCKS♂\n"
+                           f"~У тебя {bank_money + result} bucks на счету~```")
+        elif result == -money:
+            await ctx.send(f"```Ты проиграл мой ♂SLAVE♂, главное не ставь свой ♂ANAL♂ на кон\n"
+                           f"~У тебя {bank_money + result} bucks на счету~```")
+        elif result == money * 20:
+            await ctx.send(f"```♂OHH, FUCK♂!!! Джекпот!!! Теперь ты настоящий ♂DANGEON MASTER♂\n"
+                           f"~У тебя {bank_money + result} bucks на счету~```")
     else:
-        await ctx.message.author.voice.channel.connect()
+        await ctx.send("```Слишком большая сумма для тебя, мой ♂FUCKING SLAVE♂```")
 
 
+@bot.command(pass_context=True, help='-casino [money] //You know what it is')
+async def topbucks(ctx):
+    top_info = gym_db.Economy().get_top_info()
+    result = "```~Топ игроков по баксам~\n\n"
+    i = 0
+    for player in top_info:
+        i += 1
+        if i > 10:
+            break
+        try:
+            member = await bot.fetch_user(player[0])  # member_id
+            bucks = player[1]  # bucks
+            result += f"{i}. {member.name} - {bucks} Bucks\n"
+        except OverflowError:
+            pass
+    result += "```"
+    await ctx.send(result)
 
-@bot.command(pass_context=True, help='Leave voice channel')
-async def leave_gym(ctx):
-    await ctx.message.guild.voice_client.disconnect()
+
+@bot.command(pass_context=True, help='-currency //Показывает курс местных валют')
+async def currency(ctx):
+    economy = gym_db.Economy()
+    # economy.rand_currency()
+    currency_data = economy.get_currency()
+    await ctx.send(f"```~Курсы валют на сейчас~\nЧервонцы - {currency_data[0][-1]}\n"
+                   f"Тугрики - {currency_data[1][-1]}```", file=discord.File(economy.get_currency_graf()))
+    await ctx.send(f"```~Курс Bondage~\nBondage - {currency_data[2][-1]}```",
+                   file=discord.File(economy.get_bondage_graf()))
 
 
-@bot.command(pass_context=True, help='Play gachi remix (-gachi url)')
-async def gachi(ctx, url):
-    voice_client = ctx.message.guild.voice_client
-    player = await YTDLSource.from_url(url, loop=bot.loop)
-    voice_client.play(player, after=lambda e: print(f'Player error: {e}' if e else None))
+@bot.command(pass_context=True, help='-buy [name] [сумма в баксах] //Купить валют. c - Червонцы, t - Тугрики, b - Бондэйдж')
+async def buy(ctx, curr, money):
+    economy = gym_db.Economy()
+    player_money = economy.get_money_info(ctx.message.author.id)
+    currency = economy.get_currency()
+    if float(money) <= player_money[0]:
+        if curr.lower() == "t":
+            economy.change_tug(ctx.message.author.id, float(money) / currency[0][-1])
+            economy.change_bucks(ctx.message.author.id, -float(money))
+            await ctx.send(f"```Ты купил {float(money) / currency[0][-1]} тугриков```")
+        elif curr.lower() == "c":
+            economy.change_cherv(ctx.message.author.id, float(money)/currency[1][-1])
+            economy.change_bucks(ctx.message.author.id, -float(money))
+            await ctx.send(f"```Ты купил {float(money) / currency[1][-1]} червонцев```")
+        elif curr.lower() == "b":
+            economy.change_bondage(ctx.message.author.id, float(money)/currency[2][-1])
+            economy.change_bucks(ctx.message.author.id, -float(money))
+            await ctx.send(f"```Ты купил {float(money) / currency[2][-1]} Bondage-ей```")
+    else:
+        await ctx.send("```Многовато для тебя, дружок-♂ANAL♂жок```")
 
+
+@bot.command(pass_context=True, help='-sell [имя] [сумма] //Продать валют. c - Червонцы, t - Тугрики, b - Бондэйдж')
+async def sell(ctx, curr, ammount):
+    economy = gym_db.Economy()
+    player_money = economy.get_money_info(ctx.message.author.id)
+    currency = economy.get_currency()
+    if curr.lower() == "t":
+        if player_money[1] > float(ammount):
+            economy.change_tug(ctx.message.author.id, -float(ammount))
+            economy.change_bucks(ctx.message.author.id, float(ammount) * currency[0][-1])
+            await ctx.send(f"```Ты успешно продал тугрики на {float(ammount) * currency[0][-1]} Bucks-ов```")
+        else:
+            await ctx.send("```Многовато для тебя, дружок-пирожок```")
+    elif curr.lower() == "c":
+        if player_money[2] > float(ammount):
+            economy.change_cherv(ctx.message.author.id, -float(ammount))
+            economy.change_bucks(ctx.message.author.id, float(ammount) * currency[1][-1])
+            await ctx.send(f"```Ты успешно продал червонцы на {float(ammount) * currency[1][-1]} Bucks-ов```")
+        else:
+            await ctx.send("```Многовато для тебя, дружок-пирожок```")
+    elif curr.lower() == "b":
+        if player_money[3] > float(ammount):
+            economy.change_bondage(ctx.message.author.id, -float(ammount))
+            economy.change_bucks(ctx.message.author.id, float(ammount) * currency[2][-1])
+            await ctx.send(f"```Ты успешно продал Bondage-и на {float(ammount) * currency[2][-1]} Bucks-ов```")
+        else:
+            await ctx.send("```Многовато для тебя, дружок-пирожок```")
+
+
+# ----------------------Remote-Control----------------------------
+# keyboard = Controller()
+# mouse = pynput.mouse.Controller()
+# holded = []
+#
+#
+# def check_terraria():
+#     win = GetWindowText(GetForegroundWindow())
+#     if win.find("Terraria") == 0:
+#         return True
+#     else:
+#         return False
+#
+#
+# def face_control(ctx):
+#     if ctx.message.author.id == 272649817866633217 or \
+#             (ctx.message.author.id == 296506452800176128 and check_terraria()):
+#         return True
+#     else:
+#         return False
+#
+#
+# @bot.command(pass_context=True, help='-p [key name] [time in secs] '
+#                                      '//Pressing the key for some time ("left" and "right" for mouse clicks)')
+# async def p(ctx, key, time):
+#     if face_control(ctx):
+#         if key.lower() == "space":
+#             with keyboard.pressed(Key.space):
+#                 await ctx.send("Клавиша зажата")
+#                 await asyncio.sleep(float(time))
+#         elif key.lower() == "enter":
+#             with keyboard.pressed(Key.enter):
+#                 await ctx.send("Клавиша зажата")
+#                 await asyncio.sleep(float(time))
+#         elif key.lower() == "left":
+#             await ctx.send("Клавиша зажата")
+#             mouse.press(pynput.mouse.Button.left)
+#             await asyncio.sleep(float(time))
+#             mouse.release(pynput.mouse.Button.left)
+#         elif key.lower() == "right":
+#             await ctx.send("Клавиша зажата")
+#             mouse.press(pynput.mouse.Button.right)
+#             await asyncio.sleep(float(time))
+#             mouse.release(pynput.mouse.Button.right)
+#         elif key.lower() == "esc":
+#             await ctx.send("Клавиша зажата")
+#             with keyboard.pressed(Key.esc):
+#                 await asyncio.sleep(float(time))
+#         else:
+#             await ctx.send("Клавиша зажата")
+#             with keyboard.pressed(key):
+#                 await asyncio.sleep(float(time))
+#         await ctx.send("Клавиша отжата")
+#     else:
+#         await ctx.send("Обойдёшься")
+#
+#
+# @bot.command(pass_context=True, help='-hold [key name]//Holding the key while not released')
+# async def hold(ctx, key):
+#     if face_control(ctx):
+#         if key.lower() == "space":
+#             keyboard.press(Key.space)
+#             await ctx.send("Клавиша зажата")
+#             holded.append(key)
+#         elif key.lower() == "enter":
+#             keyboard.press(Key.enter)
+#             await ctx.send("Клавиша зажата")
+#             holded.append(key)
+#         elif key.lower() == "left":
+#             await ctx.send("Клавиша зажата")
+#             mouse.press(pynput.mouse.Button.left)
+#             holded.append(key)
+#         elif key.lower() == "right":
+#             await ctx.send("Клавиша зажата")
+#             mouse.press(pynput.mouse.Button.right)
+#             holded.append(key)
+#         elif key.lower() == "esc":
+#             await ctx.send("Клавиша зажата")
+#             keyboard.press(Key.esc)
+#             holded.append(key)
+#         else:
+#             await ctx.send("Клавиша зажата")
+#             keyboard.press(key)
+#             holded.append(key)
+#     else:
+#         await ctx.send("Обойдёшься")
+#
+#
+# @bot.command(pass_context=True, help='-release [key name]//Releasing the key')
+# async def release(ctx, key):
+#     if face_control(ctx):
+#         if key.lower() == "space":
+#             keyboard.release(Key.space)
+#
+#             try:
+#                 holded.remove(key)
+#                 await ctx.send("Клавиша отжата")
+#             except Exception:
+#                 await ctx.send("Но она и не была зажата")
+#         elif key.lower() == "enter":
+#             keyboard.release(Key.enter)
+#
+#             try:
+#                 holded.remove(key)
+#                 await ctx.send("Клавиша отжата")
+#             except Exception:
+#                 await ctx.send("Но она и не была зажата")
+#
+#         elif key.lower() == "left":
+#             await ctx.send("Клавиша отжата")
+#             mouse.release(pynput.mouse.Button.left)
+#
+#             try:
+#                 holded.remove(key)
+#                 await ctx.send("Клавиша отжата")
+#             except Exception:
+#                 await ctx.send("Но она и не была зажата")
+#
+#         elif key.lower() == "right":
+#             mouse.release(pynput.mouse.Button.right)
+#             try:
+#                 holded.remove(key)
+#                 await ctx.send("Клавиша отжата")
+#             except Exception:
+#                 await ctx.send("Но она и не была зажата")
+#
+#         elif key.lower() == "esc":
+#             keyboard.release(Key.esc)
+#
+#             try:
+#                 holded.remove(key)
+#                 await ctx.send("Клавиша отжата")
+#             except Exception:
+#                 await ctx.send("Но она и не была зажата")
+#
+#         else:
+#             keyboard.release(key)
+#             try:
+#                 holded.remove(key)
+#                 await ctx.send("Клавиша отжата")
+#             except Exception:
+#                 await ctx.send("Но она и не была зажата")
+#     else:
+#         await ctx.send("Обойдёшься")
+#
+#
+# @bot.command(pass_context=True, help='-screen // Making screenshot')
+# async def screen(ctx):
+#     if face_control(ctx):
+#         screen = pyautogui.screenshot()
+#         screen.save("screen.png")
+#         await ctx.send("На", file=discord.File("screen.png"))
+#     else:
+#         await ctx.send("Обойдёшься")
+#
+#
+# @bot.command(pass_context=True, help='-m_pos [x] [y] // Moving mouse (x < 1080; y < 1920). (0;0) - up left corner.')
+# async def m_pos(ctx, x, y):
+#     if face_control(ctx):
+#         x = int(x)
+#         y = int(y)
+#         if 0 < x < 1920 and 0 < y < 1080:
+#             pyautogui.moveTo(x, y)
+#         await ctx.send("Мышь передвинута")
+#     else:
+#         await ctx.send("Обойдёшься")
 
 
 
